@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>title</title>
+    <style>
+      section {
+        width: 654px;
+        height: 142px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 5%;
+        border-radius: 8px;
+        margin: auto;
+        background: #666;
+      }
+      .master {
+        float: left;
+        height: 84px;
+        width: 128px;
+        padding-left: 8px;
+        padding-top: 56px;
+      }
+      .master div {
+        margin-top: 4px;
+      }
+      #cycle {
+        margin-right: 27px;
+      }
+      .track {
+        float: left;
+        position: relative;
+        width: 64px;
+        height: 140px;
+      }
+      .slider {
+        transform: rotate(-90deg);
+        transform-origin: left center;
+        position: absolute;
+        bottom: -4px;
+        width: 100px;
+        left: 42px;
+      }
+      .solo, .mute, .record {
+        display: block;
+        position: absolute;
+        left: 8px;
+      }
+      .knob {
+        width: 52px;
+        margin-top: 4px;
+      }
+      .solo { top: 36px; }
+      .mute { top: 68px; }
+      .record { top: 100px; }
+    </style>
+  </head>
+  <body>
+    <section>
+      <div class="master">
+        <div>
+          <input type="checkbox" disabled id="previous-track">
+          <input type="checkbox" disabled id="next-track">
+        </div>
+        <div>
+          <input type="checkbox" disabled id="cycle">
+          <input type="checkbox" disabled id="set-marker">
+          <input type="checkbox" disabled id="previous-marker">
+          <input type="checkbox" disabled id="next-marker">
+        </div>
+        <div>
+          <input type="checkbox" disabled id="reverse">
+          <input type="checkbox" disabled id="forward">
+          <input type="checkbox" disabled id="stop">
+          <input type="checkbox" disabled id="play">
+          <input type="checkbox" disabled id="record">
+        </div>
+      </div>
+    </section>
+    <template id="track">
+      <div class="track">
+        <input class="solo" disabled type="checkbox">
+        <input class="mute" disabled type="checkbox">
+        <input class="record" disabled type="checkbox">
+        <input class="slider" disabled type="range" min="0" max="127">
+        <input class="knob" disabled type="range" min="0" max="127">
+      </div>
+    </template>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var section = document.querySelector('section');
+      var t = document.querySelector('#track');
+
+      for (var i=0; i<8; i++) {
+        t.content.querySelector('.mute').id = 'mute-' + i;
+        t.content.querySelector('.solo').id = 'solo-' + i;
+        t.content.querySelector('.record').id = 'prime-' + i;
+        t.content.querySelector('.slider').id = 'slider-' + i;
+        t.content.querySelector('.knob').id = 'knob-' + i;
+
+        section.appendChild(t.content.cloneNode(true));
+      }
+
+      var socket = io.connect('http://localhost:8080');
+
+      socket.on('init', function (state) {
+        for (control in state) {
+          var data = state[control];
+          var el = document.querySelector('#'+control);
+          if (el) {
+            if (data.value !== undefined) {
+              el.value = data.value;
+            } else {
+              el.checked = data.active;
+            }
+          }
+        }
+      });
+
+      socket.on('news', function (data) {
+        var el = document.querySelector('#'+data.name);
+        if (el) {
+          if (data.value !== undefined) {
+            el.value = data.value;
+          } else {
+            el.checked = data.active;
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

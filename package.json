@@ -9,6 +9,7 @@
   "author": "",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "midi": "~0.7.0"
+    "midi": "~0.7.0",
+    "socket.io": "~0.9.16"
   }
 }

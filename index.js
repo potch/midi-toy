@@ -1,3 +1,6 @@
+var fs = require('fs');
+var http = require('http');
+var socketio = require('socket.io');
 var midi = require('midi');
 
 var input = new midi.input();
@@ -56,17 +59,17 @@ var profile = [
     type: 'button'
   },
   {
-    name: 'set marker',
+    name: 'set-marker',
     id: 60,
     type: 'button'
   },
   {
-    name: 'next market',
+    name: 'next-marker',
     id: 62,
     type: 'button'
   },
   {
-    name: 'previous marker',
+    name: 'previous-marker',
     id: 61,
     type: 'button'
   },
@@ -76,12 +79,12 @@ var profile = [
     type: 'button'
   },
   {
-    name: 'next track',
+    name: 'next-track',
     id: 59,
     type: 'button'
   },
   {
-    name: 'previous track',
+    name: 'previous-track',
     id: 58,
     type: 'button'
   }
@@ -110,30 +113,47 @@ function makeControl(id, desc, offset) {
     type: desc.type
   };
   if (offset !== undefined) {
-    controls[id].offset = offset;
+    controls[id].name += '-' + offset;
   }
 }
 
-input.on('message', function(deltaTime, message) {
-  if (message[0] === 176) {
-    var id = message[1];
-    var value = message[2];
-    if (id in controls) {
-      var control = controls[id];
-      var name = control.name + ('offset' in control ? ' ' + control.offset : '');
-      if (control.type === 'button') {
-        if (value > 64) {
-          value = 'active';
+var server = http.createServer(function (req, res) {
+  res.writeHead(200, {'Content-Type': 'text/html'});
+  res.end(fs.readFileSync('index.html'));
+}).listen(8080, '127.0.0.1');
+
+var io = socketio.listen(server);
+
+var state = {};
+
+io.sockets.on('connection', function (socket) {
+
+  socket.emit('init', state);
+
+  input.on('message', function(deltaTime, message) {
+    if (message[0] === 176) {
+      var id = message[1];
+      var value = message[2];
+      if (id in controls) {
+        var control = controls[id];
+        var name = control.name;
+        if (control.type === 'button') {
+          if (value > 64) {
+            value = true;
+          } else {
+            value = false;
+          }
+          state[name] = { name: name, active: value };
+          socket.emit('news', state[name]);
         } else {
-          value = 'inactive';
+          state[name] = { name: name, value: value };
+          socket.emit('news', state[name]);
         }
-        console.log(name + ': ' + value);
       } else {
-        console.log(name + ': ' + value);
+        console.log(id, value);
       }
-    } else {
-      console.log(id, value);
     }
-  }
+  });
+
 });
 
